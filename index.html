@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>国旗クイズ</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -20,41 +22,69 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 4vw;
+    padding: 2vh 3vw;
     text-align: center;
   }
   .screen.active { display: flex; }
 
-  h1 { font-size: 7vw; margin: 0 0 4vh 0; letter-spacing: 0.05em; }
-  h2 { font-size: 5vw; margin: 0 0 3vh 0; }
+  h1 { font-size: 6vmin; margin: 0 0 1.5vh 0; letter-spacing: 0.05em; }
+  h2 { font-size: 4vmin; margin: 0 0 2vh 0; }
+
+  /* --- 縦向きのときは回転をうながす --- */
+  #rotate-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    z-index: 9999;
+    background: #0b1f3a;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8vw;
+  }
+  #rotate-overlay .icon { font-size: 18vw; margin-bottom: 4vh; animation: rotate-hint 1.6s ease-in-out infinite; }
+  #rotate-overlay p { font-size: 5.5vw; line-height: 1.6; }
+  @keyframes rotate-hint {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-90deg); }
+  }
+  @media (orientation: portrait) {
+    #rotate-overlay { display: flex; }
+    .screen.active { display: none !important; }
+  }
 
   /* --- ルール画面 --- */
-  #screen-rules { justify-content: flex-start; padding-top: 5vh; }
+  #screen-rules { justify-content: center; }
   .rules-box {
     background: rgba(255,255,255,0.08);
-    border-radius: 24px;
-    padding: 3vh 4vw;
-    max-width: 900px;
+    border-radius: 20px;
+    padding: 2vh 2vw;
+    max-width: 1400px;
     width: 100%;
+  }
+  .rules-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5vw;
   }
   .rule-item {
     display: flex;
-    align-items: flex-start;
-    gap: 1.2vw;
-    font-size: 3.4vw;
-    line-height: 2.1;
-    text-align: left;
-    margin-bottom: 1.5vh;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8vh;
+    font-size: 2.1vmin;
+    line-height: 1.6;
+    text-align: center;
   }
   .rule-num {
     flex: none;
-    font-size: 3.4vw;
+    font-size: 2.6vmin;
     font-weight: bold;
     background: #ffcc00;
     color: #12305a;
     border-radius: 50%;
-    width: 2.2em;
-    height: 2.2em;
+    width: 1.9em;
+    height: 1.9em;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -63,34 +93,34 @@
 
   .agree-row {
     display: flex;
-    gap: 4vw;
-    margin-top: 4vh;
+    gap: 3vw;
+    margin-top: 2.2vh;
     flex-wrap: wrap;
     justify-content: center;
   }
   .agree-btn {
-    font-size: 3.6vw;
+    font-size: 2.6vmin;
     font-weight: bold;
-    padding: 3vh 4vw;
-    border-radius: 20px;
-    border: 4px solid #fff;
+    padding: 1.6vh 3vw;
+    border-radius: 18px;
+    border: 3px solid #fff;
     background: transparent;
     color: #fff;
-    min-width: 38vw;
+    min-width: 24vw;
   }
   .agree-btn.agreed {
     background: #4caf50;
     border-color: #4caf50;
   }
-  #go-start-wrap { margin-top: 4vh; display: none; }
+  #go-start-wrap { margin-top: 2vh; display: none; }
 
   /* --- 共通ボタン --- */
   .btn {
-    font-size: 4.2vw;
+    font-size: 3vmin;
     font-weight: bold;
-    padding: 3vh 5vw;
-    margin: 1.5vh;
-    border-radius: 24px;
+    padding: 1.8vh 3.5vw;
+    margin: 1vh;
+    border-radius: 20px;
     border: none;
     background: #ffcc00;
     color: #12305a;
@@ -106,11 +136,11 @@
   .btn.secondary:active { transform: translateY(2px); }
 
   /* --- スタート画面 --- */
-  #screen-start p { font-size: 2.6vw; opacity: 0.8; }
+  #screen-start p { font-size: 2.2vmin; opacity: 0.8; margin: 0 0 3vh 0; }
 
   /* --- カウントダウン --- */
   #countdown-number {
-    font-size: 45vw;
+    font-size: 52vh;
     font-weight: 900;
     line-height: 1;
     animation: pop 0.8s ease-out;
@@ -122,47 +152,59 @@
   }
 
   /* --- 国旗画面 --- */
+  #screen-flag { flex-direction: row; gap: 4vw; }
+  .flag-display { display: flex; flex-direction: column; align-items: center; flex: 1 1 60%; min-width: 0; }
+  .flag-side { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 30%; }
   #flag-img {
-    max-width: 88vw;
-    max-height: 55vh;
+    max-width: 100%;
+    max-height: 62vh;
     border: 5px solid #fff;
     border-radius: 14px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
     background: #fff;
   }
   #answer-name {
-    font-size: 9vw;
+    font-size: 5vmin;
     font-weight: bold;
-    margin: 3vh 0;
+    margin: 2vh 0;
     color: #ffe27a;
     display: none;
   }
-  .flag-buttons { margin-top: 3vh; }
+  .flag-buttons { display: flex; flex-direction: column; }
+  .flag-buttons .btn { width: 100%; }
 </style>
 </head>
 <body>
+
+  <!-- 縦向きのときの回転案内 -->
+  <div id="rotate-overlay">
+    <div class="icon">📱</div>
+    <p>iPad を<br>よこむき にしてください</p>
+  </div>
 
   <!-- ルール画面 -->
   <div id="screen-rules" class="screen active">
     <h1>国旗クイズ</h1>
     <div class="rules-box">
-      <div class="rule-item">
-        <span class="rule-num">1</span>
-        <span>
-          <ruby>先<rt>さき</rt></ruby>に10<ruby>点<rt>てん</rt></ruby><ruby>取<rt>と</rt></ruby>った<ruby>人<rt>ひと</rt></ruby>の<ruby>勝<rt>か</rt></ruby>ち
-        </span>
-      </div>
-      <div class="rule-item">
-        <span class="rule-num">2</span>
-        <span>
-          <ruby>同時<rt>どうじ</rt></ruby>に<ruby>答<rt>こた</rt></ruby>えた<ruby>時<rt>とき</rt></ruby>はみんなが<ruby>合意<rt>ごうい</rt></ruby>すれば、<ruby>同時<rt>どうじ</rt></ruby>に<ruby>答<rt>こた</rt></ruby>えた<ruby>人<rt>ひと</rt></ruby><ruby>全員<rt>ぜんいん</rt></ruby>にポイント
-        </span>
-      </div>
-      <div class="rule-item">
-        <span class="rule-num">3</span>
-        <span>
-          スポーツマンシップに<ruby>則<rt>のっと</rt></ruby>ってプレーする
-        </span>
+      <div class="rules-grid">
+        <div class="rule-item">
+          <span class="rule-num">1</span>
+          <span>
+            <ruby>先<rt>さき</rt></ruby>に10<ruby>点<rt>てん</rt></ruby><ruby>取<rt>と</rt></ruby>った<ruby>人<rt>ひと</rt></ruby>の<ruby>勝<rt>か</rt></ruby>ち
+          </span>
+        </div>
+        <div class="rule-item">
+          <span class="rule-num">2</span>
+          <span>
+            <ruby>同時<rt>どうじ</rt></ruby>に<ruby>答<rt>こた</rt></ruby>えた<ruby>時<rt>とき</rt></ruby>はみんなが<ruby>合意<rt>ごうい</rt></ruby>すれば、<ruby>同時<rt>どうじ</rt></ruby>に<ruby>答<rt>こた</rt></ruby>えた<ruby>人<rt>ひと</rt></ruby><ruby>全員<rt>ぜんいん</rt></ruby>にポイント
+          </span>
+        </div>
+        <div class="rule-item">
+          <span class="rule-num">3</span>
+          <span>
+            スポーツマンシップに<ruby>則<rt>のっと</rt></ruby>ってプレーする
+          </span>
+        </div>
       </div>
     </div>
 
@@ -193,11 +235,15 @@
 
   <!-- 国旗画面 -->
   <div id="screen-flag" class="screen">
-    <img id="flag-img" src="" alt="国旗">
-    <div id="answer-name"></div>
-    <div class="flag-buttons">
-      <button class="btn" id="show-answer-btn" onclick="showAnswer()">答えを見る</button>
-      <button class="btn" id="next-btn" onclick="startCountdown()">次の問題</button>
+    <div class="flag-display">
+      <img id="flag-img" src="" alt="国旗">
+    </div>
+    <div class="flag-side">
+      <div id="answer-name"></div>
+      <div class="flag-buttons">
+        <button class="btn" id="show-answer-btn" onclick="showAnswer()">答えを見る</button>
+        <button class="btn" id="next-btn" onclick="startCountdown()">次の問題</button>
+      </div>
     </div>
   </div>
 
