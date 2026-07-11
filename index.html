@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>国旗クイズ</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; width: 100%;
+    background: #12305a;
+    color: #fff;
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+  .screen {
+    display: none;
+    position: fixed; inset: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4vw;
+    text-align: center;
+  }
+  .screen.active { display: flex; }
+
+  h1 { font-size: 7vw; margin: 0 0 4vh 0; letter-spacing: 0.05em; }
+  h2 { font-size: 5vw; margin: 0 0 3vh 0; }
+
+  /* --- ルール画面 --- */
+  #screen-rules { justify-content: flex-start; padding-top: 5vh; }
+  .rules-box {
+    background: rgba(255,255,255,0.08);
+    border-radius: 24px;
+    padding: 3vh 4vw;
+    max-width: 900px;
+    width: 100%;
+  }
+  .rule-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.2vw;
+    font-size: 3.4vw;
+    line-height: 2.1;
+    text-align: left;
+    margin-bottom: 1.5vh;
+  }
+  .rule-num {
+    flex: none;
+    font-size: 3.4vw;
+    font-weight: bold;
+    background: #ffcc00;
+    color: #12305a;
+    border-radius: 50%;
+    width: 2.2em;
+    height: 2.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  ruby rt { font-size: 0.5em; color: #ffe27a; }
+
+  .agree-row {
+    display: flex;
+    gap: 4vw;
+    margin-top: 4vh;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .agree-btn {
+    font-size: 3.6vw;
+    font-weight: bold;
+    padding: 3vh 4vw;
+    border-radius: 20px;
+    border: 4px solid #fff;
+    background: transparent;
+    color: #fff;
+    min-width: 38vw;
+  }
+  .agree-btn.agreed {
+    background: #4caf50;
+    border-color: #4caf50;
+  }
+  #go-start-wrap { margin-top: 4vh; display: none; }
+
+  /* --- 共通ボタン --- */
+  .btn {
+    font-size: 4.2vw;
+    font-weight: bold;
+    padding: 3vh 5vw;
+    margin: 1.5vh;
+    border-radius: 24px;
+    border: none;
+    background: #ffcc00;
+    color: #12305a;
+    box-shadow: 0 6px 0 #c99900;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c99900; }
+  .btn.secondary {
+    background: transparent;
+    color: #fff;
+    border: 3px solid #fff;
+    box-shadow: none;
+  }
+  .btn.secondary:active { transform: translateY(2px); }
+
+  /* --- スタート画面 --- */
+  #screen-start p { font-size: 2.6vw; opacity: 0.8; }
+
+  /* --- カウントダウン --- */
+  #countdown-number {
+    font-size: 45vw;
+    font-weight: 900;
+    line-height: 1;
+    animation: pop 0.8s ease-out;
+  }
+  @keyframes pop {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* --- 国旗画面 --- */
+  #flag-img {
+    max-width: 88vw;
+    max-height: 55vh;
+    border: 5px solid #fff;
+    border-radius: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    background: #fff;
+  }
+  #answer-name {
+    font-size: 9vw;
+    font-weight: bold;
+    margin: 3vh 0;
+    color: #ffe27a;
+    display: none;
+  }
+  .flag-buttons { margin-top: 3vh; }
+</style>
+</head>
+<body>
+
+  <!-- ルール画面 -->
+  <div id="screen-rules" class="screen active">
+    <h1>国旗クイズ</h1>
+    <div class="rules-box">
+      <div class="rule-item">
+        <span class="rule-num">1</span>
+        <span>
+          <ruby>先<rt>さき</rt></ruby>に10<ruby>点<rt>てん</rt></ruby><ruby>取<rt>と</rt></ruby>った<ruby>人<rt>ひと</rt></ruby>の<ruby>勝<rt>か</rt></ruby>ち
+        </span>
+      </div>
+      <div class="rule-item">
+        <span class="rule-num">2</span>
+        <span>
+          <ruby>同時<rt>どうじ</rt></ruby>に<ruby>答<rt>こた</rt></ruby>えた<ruby>時<rt>とき</rt></ruby>はみんなが<ruby>合意<rt>ごうい</rt></ruby>すれば、<ruby>同時<rt>どうじ</rt></ruby>に<ruby>答<rt>こた</rt></ruby>えた<ruby>人<rt>ひと</rt></ruby><ruby>全員<rt>ぜんいん</rt></ruby>にポイント
+        </span>
+      </div>
+      <div class="rule-item">
+        <span class="rule-num">3</span>
+        <span>
+          スポーツマンシップに<ruby>則<rt>のっと</rt></ruby>ってプレーする
+        </span>
+      </div>
+    </div>
+
+    <div class="agree-row">
+      <button class="agree-btn" id="agree1" onclick="agree(1)">① どうい する</button>
+      <button class="agree-btn" id="agree2" onclick="agree(2)">② どうい する</button>
+    </div>
+
+    <div id="go-start-wrap">
+      <button class="btn" onclick="showScreen('screen-start')">つぎへ</button>
+    </div>
+  </div>
+
+  <!-- スタート画面 -->
+  <div id="screen-start" class="screen">
+    <h1>国旗クイズ</h1>
+    <p>「スタート」をおすと、もんだいが はじまるよ</p>
+    <button class="btn" onclick="startCountdown()">スタート</button>
+    <div>
+      <button class="btn secondary" onclick="showScreen('screen-rules')">ルールにもどる</button>
+    </div>
+  </div>
+
+  <!-- カウントダウン画面 -->
+  <div id="screen-countdown" class="screen">
+    <div id="countdown-number">3</div>
+  </div>
+
+  <!-- 国旗画面 -->
+  <div id="screen-flag" class="screen">
+    <img id="flag-img" src="" alt="国旗">
+    <div id="answer-name"></div>
+    <div class="flag-buttons">
+      <button class="btn" id="show-answer-btn" onclick="showAnswer()">答えを見る</button>
+      <button class="btn" id="next-btn" onclick="startCountdown()">次の問題</button>
+    </div>
+  </div>
+
+<script>
+  const countries = [
+    ["jp","日本"],["cn","中国"],["kr","韓国"],["kp","北朝鮮"],["tw","台湾"],["mn","モンゴル"],
+    ["in","インド"],["pk","パキスタン"],["bd","バングラデシュ"],["lk","スリランカ"],["np","ネパール"],
+    ["bt","ブータン"],["mv","モルディブ"],["mm","ミャンマー"],["th","タイ"],["la","ラオス"],
+    ["vn","ベトナム"],["kh","カンボジア"],["my","マレーシア"],["sg","シンガポール"],["id","インドネシア"],
+    ["ph","フィリピン"],["bn","ブルネイ"],["tl","東ティモール"],
+    ["kz","カザフスタン"],["uz","ウズベキスタン"],["tm","トルクメニスタン"],["tj","タジキスタン"],["kg","キルギス"],
+    ["af","アフガニスタン"],["ir","イラン"],["iq","イラク"],["sy","シリア"],["lb","レバノン"],["jo","ヨルダン"],
+    ["il","イスラエル"],["ps","パレスチナ"],["sa","サウジアラビア"],["ye","イエメン"],["om","オマーン"],
+    ["ae","アラブ首長国連邦"],["qa","カタール"],["bh","バーレーン"],["kw","クウェート"],["tr","トルコ"],
+    ["ge","ジョージア"],["am","アルメニア"],["az","アゼルバイジャン"],["cy","キプロス"],
+    ["ru","ロシア"],["ua","ウクライナ"],["by","ベラルーシ"],["md","モルドバ"],["ro","ルーマニア"],
+    ["bg","ブルガリア"],["gr","ギリシャ"],["al","アルバニア"],["mk","北マケドニア"],["rs","セルビア"],
+    ["me","モンテネグロ"],["ba","ボスニア・ヘルツェゴビナ"],["hr","クロアチア"],["si","スロベニア"],
+    ["hu","ハンガリー"],["sk","スロバキア"],["cz","チェコ"],["pl","ポーランド"],["de","ドイツ"],
+    ["at","オーストリア"],["ch","スイス"],["li","リヒテンシュタイン"],["fr","フランス"],["mc","モナコ"],
+    ["be","ベルギー"],["nl","オランダ"],["lu","ルクセンブルク"],["gb","イギリス"],["ie","アイルランド"],
+    ["is","アイスランド"],["dk","デンマーク"],["no","ノルウェー"],["se","スウェーデン"],["fi","フィンランド"],
+    ["ee","エストニア"],["lv","ラトビア"],["lt","リトアニア"],["pt","ポルトガル"],["es","スペイン"],
+    ["ad","アンドラ"],["it","イタリア"],["sm","サンマリノ"],["va","バチカン"],["mt","マルタ"],
+    ["eg","エジプト"],["ly","リビア"],["tn","チュニジア"],["dz","アルジェリア"],["ma","モロッコ"],
+    ["sd","スーダン"],["ss","南スーダン"],["et","エチオピア"],["er","エリトリア"],["dj","ジブチ"],
+    ["so","ソマリア"],["ke","ケニア"],["ug","ウガンダ"],["tz","タンザニア"],["rw","ルワンダ"],
+    ["bi","ブルンジ"],["cd","コンゴ民主共和国"],["cg","コンゴ共和国"],["cf","中央アフリカ"],
+    ["cm","カメルーン"],["td","チャド"],["ne","ニジェール"],["ng","ナイジェリア"],["bj","ベナン"],
+    ["tg","トーゴ"],["gh","ガーナ"],["ci","コートジボワール"],["lr","リベリア"],["sl","シエラレオネ"],
+    ["gn","ギニア"],["gw","ギニアビサウ"],["sn","セネガル"],["gm","ガンビア"],["ml","マリ"],
+    ["bf","ブルキナファソ"],["mr","モーリタニア"],["cv","カーボベルデ"],["gq","赤道ギニア"],
+    ["ga","ガボン"],["st","サントメ・プリンシペ"],["ao","アンゴラ"],["zm","ザンビア"],["mw","マラウイ"],
+    ["mz","モザンビーク"],["zw","ジンバブエ"],["bw","ボツワナ"],["na","ナミビア"],["za","南アフリカ"],
+    ["sz","エスワティニ"],["ls","レソト"],["mg","マダガスカル"],["mu","モーリシャス"],["sc","セーシェル"],
+    ["km","コモロ"],
+    ["au","オーストラリア"],["nz","ニュージーランド"],["pg","パプアニューギニア"],["fj","フィジー"],
+    ["sb","ソロモン諸島"],["vu","バヌアツ"],["ws","サモア"],["to","トンガ"],["ki","キリバス"],
+    ["tv","ツバル"],["nr","ナウル"],["pw","パラオ"],["fm","ミクロネシア連邦"],["mh","マーシャル諸島"],
+    ["us","アメリカ合衆国"],["ca","カナダ"],["mx","メキシコ"],["gt","グアテマラ"],["bz","ベリーズ"],
+    ["sv","エルサルバドル"],["hn","ホンジュラス"],["ni","ニカラグア"],["cr","コスタリカ"],["pa","パナマ"],
+    ["cu","キューバ"],["jm","ジャマイカ"],["ht","ハイチ"],["do","ドミニカ共和国"],["bs","バハマ"],
+    ["bb","バルバドス"],["tt","トリニダード・トバゴ"],["lc","セントルシア"],["vc","セントビンセント・グレナディーン"],
+    ["gd","グレナダ"],["dm","ドミニカ国"],["ag","アンティグア・バーブーダ"],["kn","セントクリストファー・ネイビス"],
+    ["co","コロンビア"],["ve","ベネズエラ"],["gy","ガイアナ"],["sr","スリナム"],["ec","エクアドル"],
+    ["pe","ペルー"],["br","ブラジル"],["bo","ボリビア"],["py","パラグアイ"],["uy","ウルグアイ"],["ar","アルゼンチン"]
+  ];
+
+  let deck = [];
+  let currentCountry = null;
+  let agreed1 = false, agreed2 = false;
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function newDeck() { deck = shuffle(countries); }
+
+  function nextCountry() {
+    if (deck.length === 0) newDeck();
+    currentCountry = deck.pop();
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  function agree(n) {
+    if (n === 1) {
+      agreed1 = true;
+      const b = document.getElementById("agree1");
+      b.classList.add("agreed");
+      b.textContent = "① どういした ✓";
+    } else {
+      agreed2 = true;
+      const b = document.getElementById("agree2");
+      b.classList.add("agreed");
+      b.textContent = "② どういした ✓";
+    }
+    if (agreed1 && agreed2) {
+      document.getElementById("go-start-wrap").style.display = "block";
+    }
+  }
+
+  function startCountdown() {
+    showScreen("screen-countdown");
+    let count = 3;
+    const el = document.getElementById("countdown-number");
+    el.textContent = count;
+    el.style.animation = "none";
+    void el.offsetWidth;
+    el.style.animation = "pop 0.8s ease-out";
+    const timer = setInterval(() => {
+      count--;
+      if (count > 0) {
+        el.textContent = count;
+        el.style.animation = "none";
+        void el.offsetWidth;
+        el.style.animation = "pop 0.8s ease-out";
+      } else {
+        clearInterval(timer);
+        showFlagScreen();
+      }
+    }, 800);
+  }
+
+  function showFlagScreen() {
+    nextCountry();
+    const img = document.getElementById("flag-img");
+    img.src = `https://flagcdn.com/w640/${currentCountry[0]}.png`;
+    img.alt = currentCountry[1];
+    const ans = document.getElementById("answer-name");
+    ans.textContent = "";
+    ans.style.display = "none";
+    document.getElementById("show-answer-btn").style.display = "inline-block";
+    showScreen("screen-flag");
+  }
+
+  function showAnswer() {
+    const ans = document.getElementById("answer-name");
+    ans.textContent = currentCountry[1];
+    ans.style.display = "block";
+    document.getElementById("show-answer-btn").style.display = "none";
+  }
+
+  newDeck();
+</script>
+</body>
+</html>
