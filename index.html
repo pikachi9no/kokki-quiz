@@ -53,6 +53,32 @@
     .screen.active { display: none !important; }
   }
 
+  /* --- モード選択画面 --- */
+  #screen-mode p { font-size: 2.4vmin; opacity: 0.85; margin: 0 0 3vh 0; }
+  .mode-row {
+    display: flex;
+    gap: 4vw;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2vh;
+    font-size: 3vmin;
+    font-weight: bold;
+    padding: 3.5vh 4vw;
+    border-radius: 24px;
+    border: none;
+    background: #ffcc00;
+    color: #12305a;
+    box-shadow: 0 6px 0 #c99900;
+    min-width: 28vw;
+  }
+  .mode-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c99900; }
+  .mode-icon { font-size: 9vmin; }
+
   /* --- ルール画面 --- */
   #screen-rules { justify-content: center; }
   .rules-box {
@@ -136,7 +162,8 @@
   .btn.secondary:active { transform: translateY(2px); }
 
   /* --- スタート画面 --- */
-  #screen-start p { font-size: 2.2vmin; opacity: 0.8; margin: 0 0 3vh 0; }
+  #screen-start #mode-label { font-size: 2.6vmin; font-weight: bold; color: #ffe27a; margin: 0 0 1vh 0; }
+  #screen-start p.hint { font-size: 2.2vmin; opacity: 0.8; margin: 0 0 3vh 0; }
 
   /* --- カウントダウン --- */
   #countdown-number {
@@ -152,26 +179,32 @@
   }
 
   /* --- 国旗画面 --- */
-  #screen-flag { flex-direction: row; gap: 4vw; padding: 1.5vh 2.5vw; }
-  .flag-display { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0%; min-width: 0; }
+  #screen-flag { flex-direction: column; padding: 1.5vh 2.5vw; gap: 1.2vh; }
+  .flag-main { display: flex; flex-direction: row; gap: 4vw; flex: 1 1 0%; min-height: 0; width: 100%; align-items: stretch; }
+  .flag-display { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0%; min-width: 0; height: 100%; }
   .flag-side { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 0 0 30%; }
   #flag-img {
     max-width: 100%;
-    max-height: 90vh;
+    max-height: 100%;
     border: 5px solid #fff;
     border-radius: 14px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
     background: #fff;
   }
-  #answer-name {
-    font-size: 5vmin;
+  .reveal-text {
+    font-size: 4.2vmin;
     font-weight: bold;
-    margin: 2vh 0;
+    margin: 0.6vh 0;
     color: #ffe27a;
     display: none;
   }
   .flag-buttons { display: flex; flex-direction: column; }
   .flag-buttons .btn { width: 100%; }
+
+  /* モードごとの表示切り替え */
+  .only-flag, .only-capital { display: none; }
+  body.mode-flag .only-flag { display: block; }
+  body.mode-capital .only-capital { display: block; }
 </style>
 </head>
 <body>
@@ -182,8 +215,24 @@
     <p>iPad を<br>よこむき にしてください</p>
   </div>
 
+  <!-- モード選択画面 -->
+  <div id="screen-mode" class="screen active">
+    <h1>国旗クイズ</h1>
+    <p>あそびたい クイズを えらんでね</p>
+    <div class="mode-row">
+      <button class="mode-btn" onclick="selectMode('flag')">
+        <span class="mode-icon">🏳️</span>
+        <span>国旗クイズ</span>
+      </button>
+      <button class="mode-btn" onclick="selectMode('capital')">
+        <span class="mode-icon">🏛️</span>
+        <span>国の首都あてクイズ</span>
+      </button>
+    </div>
+  </div>
+
   <!-- ルール画面 -->
-  <div id="screen-rules" class="screen active">
+  <div id="screen-rules" class="screen">
     <h1>国旗クイズ</h1>
     <div class="rules-box">
       <div class="rules-grid">
@@ -221,9 +270,11 @@
   <!-- スタート画面 -->
   <div id="screen-start" class="screen">
     <h1>国旗クイズ</h1>
-    <p>「スタート」をおすと、もんだいが はじまるよ</p>
+    <p id="mode-label"></p>
+    <p class="hint">「スタート」をおすと、もんだいが はじまるよ</p>
     <button class="btn" onclick="startCountdown()">スタート</button>
     <div>
+      <button class="btn secondary" onclick="showScreen('screen-mode')">クイズを かえる</button>
       <button class="btn secondary" onclick="showScreen('screen-rules')">ルールにもどる</button>
     </div>
   </div>
@@ -235,66 +286,73 @@
 
   <!-- 国旗画面 -->
   <div id="screen-flag" class="screen">
-    <div class="flag-display">
-      <img id="flag-img" src="" alt="国旗">
-    </div>
-    <div class="flag-side">
-      <div id="answer-name"></div>
-      <div class="flag-buttons">
-        <button class="btn" id="show-answer-btn" onclick="showAnswer()">答えを見る</button>
-        <button class="btn" id="next-btn" onclick="startCountdown()">次の問題</button>
+    <div class="flag-main">
+      <div class="flag-display">
+        <img id="flag-img" src="" alt="国旗">
+      </div>
+      <div class="flag-side">
+        <div id="reveal-country" class="reveal-text"></div>
+        <div id="reveal-capital" class="reveal-text"></div>
+        <div class="flag-buttons">
+          <button class="btn only-flag" id="show-answer-btn" onclick="showCountryAnswer()">答えを見る</button>
+          <button class="btn only-capital" id="show-country-btn" onclick="showCountryAnswer()">国名を見る</button>
+          <button class="btn only-capital" id="show-capital-btn" onclick="showCapitalAnswer()">首都名を見る</button>
+          <button class="btn" id="next-btn" onclick="startCountdown()">次の問題</button>
+        </div>
       </div>
     </div>
   </div>
 
 <script>
+  // [code, 国名, 首都]
   const countries = [
-    ["jp","日本"],["cn","中国"],["kr","韓国"],["kp","北朝鮮"],["tw","台湾"],["mn","モンゴル"],
-    ["in","インド"],["pk","パキスタン"],["bd","バングラデシュ"],["lk","スリランカ"],["np","ネパール"],
-    ["bt","ブータン"],["mv","モルディブ"],["mm","ミャンマー"],["th","タイ"],["la","ラオス"],
-    ["vn","ベトナム"],["kh","カンボジア"],["my","マレーシア"],["sg","シンガポール"],["id","インドネシア"],
-    ["ph","フィリピン"],["bn","ブルネイ"],["tl","東ティモール"],
-    ["kz","カザフスタン"],["uz","ウズベキスタン"],["tm","トルクメニスタン"],["tj","タジキスタン"],["kg","キルギス"],
-    ["af","アフガニスタン"],["ir","イラン"],["iq","イラク"],["sy","シリア"],["lb","レバノン"],["jo","ヨルダン"],
-    ["il","イスラエル"],["ps","パレスチナ"],["sa","サウジアラビア"],["ye","イエメン"],["om","オマーン"],
-    ["ae","アラブ首長国連邦"],["qa","カタール"],["bh","バーレーン"],["kw","クウェート"],["tr","トルコ"],
-    ["ge","ジョージア"],["am","アルメニア"],["az","アゼルバイジャン"],["cy","キプロス"],
-    ["ru","ロシア"],["ua","ウクライナ"],["by","ベラルーシ"],["md","モルドバ"],["ro","ルーマニア"],
-    ["bg","ブルガリア"],["gr","ギリシャ"],["al","アルバニア"],["mk","北マケドニア"],["rs","セルビア"],
-    ["me","モンテネグロ"],["ba","ボスニア・ヘルツェゴビナ"],["hr","クロアチア"],["si","スロベニア"],
-    ["hu","ハンガリー"],["sk","スロバキア"],["cz","チェコ"],["pl","ポーランド"],["de","ドイツ"],
-    ["at","オーストリア"],["ch","スイス"],["li","リヒテンシュタイン"],["fr","フランス"],["mc","モナコ"],
-    ["be","ベルギー"],["nl","オランダ"],["lu","ルクセンブルク"],["gb","イギリス"],["ie","アイルランド"],
-    ["is","アイスランド"],["dk","デンマーク"],["no","ノルウェー"],["se","スウェーデン"],["fi","フィンランド"],
-    ["ee","エストニア"],["lv","ラトビア"],["lt","リトアニア"],["pt","ポルトガル"],["es","スペイン"],
-    ["ad","アンドラ"],["it","イタリア"],["sm","サンマリノ"],["va","バチカン"],["mt","マルタ"],
-    ["eg","エジプト"],["ly","リビア"],["tn","チュニジア"],["dz","アルジェリア"],["ma","モロッコ"],
-    ["sd","スーダン"],["ss","南スーダン"],["et","エチオピア"],["er","エリトリア"],["dj","ジブチ"],
-    ["so","ソマリア"],["ke","ケニア"],["ug","ウガンダ"],["tz","タンザニア"],["rw","ルワンダ"],
-    ["bi","ブルンジ"],["cd","コンゴ民主共和国"],["cg","コンゴ共和国"],["cf","中央アフリカ"],
-    ["cm","カメルーン"],["td","チャド"],["ne","ニジェール"],["ng","ナイジェリア"],["bj","ベナン"],
-    ["tg","トーゴ"],["gh","ガーナ"],["ci","コートジボワール"],["lr","リベリア"],["sl","シエラレオネ"],
-    ["gn","ギニア"],["gw","ギニアビサウ"],["sn","セネガル"],["gm","ガンビア"],["ml","マリ"],
-    ["bf","ブルキナファソ"],["mr","モーリタニア"],["cv","カーボベルデ"],["gq","赤道ギニア"],
-    ["ga","ガボン"],["st","サントメ・プリンシペ"],["ao","アンゴラ"],["zm","ザンビア"],["mw","マラウイ"],
-    ["mz","モザンビーク"],["zw","ジンバブエ"],["bw","ボツワナ"],["na","ナミビア"],["za","南アフリカ"],
-    ["sz","エスワティニ"],["ls","レソト"],["mg","マダガスカル"],["mu","モーリシャス"],["sc","セーシェル"],
-    ["km","コモロ"],
-    ["au","オーストラリア"],["nz","ニュージーランド"],["pg","パプアニューギニア"],["fj","フィジー"],
-    ["sb","ソロモン諸島"],["vu","バヌアツ"],["ws","サモア"],["to","トンガ"],["ki","キリバス"],
-    ["tv","ツバル"],["nr","ナウル"],["pw","パラオ"],["fm","ミクロネシア連邦"],["mh","マーシャル諸島"],
-    ["us","アメリカ合衆国"],["ca","カナダ"],["mx","メキシコ"],["gt","グアテマラ"],["bz","ベリーズ"],
-    ["sv","エルサルバドル"],["hn","ホンジュラス"],["ni","ニカラグア"],["cr","コスタリカ"],["pa","パナマ"],
-    ["cu","キューバ"],["jm","ジャマイカ"],["ht","ハイチ"],["do","ドミニカ共和国"],["bs","バハマ"],
-    ["bb","バルバドス"],["tt","トリニダード・トバゴ"],["lc","セントルシア"],["vc","セントビンセント・グレナディーン"],
-    ["gd","グレナダ"],["dm","ドミニカ国"],["ag","アンティグア・バーブーダ"],["kn","セントクリストファー・ネイビス"],
-    ["co","コロンビア"],["ve","ベネズエラ"],["gy","ガイアナ"],["sr","スリナム"],["ec","エクアドル"],
-    ["pe","ペルー"],["br","ブラジル"],["bo","ボリビア"],["py","パラグアイ"],["uy","ウルグアイ"],["ar","アルゼンチン"]
+    ["jp","日本","東京"],["cn","中国","北京"],["kr","韓国","ソウル"],["kp","北朝鮮","平壌"],["tw","台湾","台北"],["mn","モンゴル","ウランバートル"],
+    ["in","インド","ニューデリー"],["pk","パキスタン","イスラマバード"],["bd","バングラデシュ","ダッカ"],["lk","スリランカ","コロンボ"],["np","ネパール","カトマンズ"],
+    ["bt","ブータン","ティンプー"],["mv","モルディブ","マレ"],["mm","ミャンマー","ネピドー"],["th","タイ","バンコク"],["la","ラオス","ビエンチャン"],
+    ["vn","ベトナム","ハノイ"],["kh","カンボジア","プノンペン"],["my","マレーシア","クアラルンプール"],["sg","シンガポール","シンガポール"],["id","インドネシア","ジャカルタ"],
+    ["ph","フィリピン","マニラ"],["bn","ブルネイ","バンダルスリブガワン"],["tl","東ティモール","ディリ"],
+    ["kz","カザフスタン","アスタナ"],["uz","ウズベキスタン","タシケント"],["tm","トルクメニスタン","アシガバット"],["tj","タジキスタン","ドゥシャンベ"],["kg","キルギス","ビシュケク"],
+    ["af","アフガニスタン","カブール"],["ir","イラン","テヘラン"],["iq","イラク","バグダッド"],["sy","シリア","ダマスカス"],["lb","レバノン","ベイルート"],["jo","ヨルダン","アンマン"],
+    ["il","イスラエル","エルサレム"],["ps","パレスチナ","ラマッラ"],["sa","サウジアラビア","リヤド"],["ye","イエメン","サナア"],["om","オマーン","マスカット"],
+    ["ae","アラブ首長国連邦","アブダビ"],["qa","カタール","ドーハ"],["bh","バーレーン","マナーマ"],["kw","クウェート","クウェート"],["tr","トルコ","アンカラ"],
+    ["ge","ジョージア","トビリシ"],["am","アルメニア","エレバン"],["az","アゼルバイジャン","バクー"],["cy","キプロス","ニコシア"],
+    ["ru","ロシア","モスクワ"],["ua","ウクライナ","キーウ"],["by","ベラルーシ","ミンスク"],["md","モルドバ","キシナウ"],["ro","ルーマニア","ブカレスト"],
+    ["bg","ブルガリア","ソフィア"],["gr","ギリシャ","アテネ"],["al","アルバニア","ティラナ"],["mk","北マケドニア","スコピエ"],["rs","セルビア","ベオグラード"],
+    ["me","モンテネグロ","ポドゴリツァ"],["ba","ボスニア・ヘルツェゴビナ","サラエボ"],["hr","クロアチア","ザグレブ"],["si","スロベニア","リュブリャナ"],
+    ["hu","ハンガリー","ブダペスト"],["sk","スロバキア","ブラチスラバ"],["cz","チェコ","プラハ"],["pl","ポーランド","ワルシャワ"],["de","ドイツ","ベルリン"],
+    ["at","オーストリア","ウィーン"],["ch","スイス","ベルン"],["li","リヒテンシュタイン","ファドゥーツ"],["fr","フランス","パリ"],["mc","モナコ","モナコ"],
+    ["be","ベルギー","ブリュッセル"],["nl","オランダ","アムステルダム"],["lu","ルクセンブルク","ルクセンブルク"],["gb","イギリス","ロンドン"],["ie","アイルランド","ダブリン"],
+    ["is","アイスランド","レイキャビク"],["dk","デンマーク","コペンハーゲン"],["no","ノルウェー","オスロ"],["se","スウェーデン","ストックホルム"],["fi","フィンランド","ヘルシンキ"],
+    ["ee","エストニア","タリン"],["lv","ラトビア","リガ"],["lt","リトアニア","ビリニュス"],["pt","ポルトガル","リスボン"],["es","スペイン","マドリード"],
+    ["ad","アンドラ","アンドララベリャ"],["it","イタリア","ローマ"],["sm","サンマリノ","サンマリノ"],["va","バチカン","バチカン市国"],["mt","マルタ","バレッタ"],
+    ["eg","エジプト","カイロ"],["ly","リビア","トリポリ"],["tn","チュニジア","チュニス"],["dz","アルジェリア","アルジェ"],["ma","モロッコ","ラバト"],
+    ["sd","スーダン","ハルツーム"],["ss","南スーダン","ジュバ"],["et","エチオピア","アディスアベバ"],["er","エリトリア","アスマラ"],["dj","ジブチ","ジブチ"],
+    ["so","ソマリア","モガディシュ"],["ke","ケニア","ナイロビ"],["ug","ウガンダ","カンパラ"],["tz","タンザニア","ドドマ"],["rw","ルワンダ","キガリ"],
+    ["bi","ブルンジ","ギテガ"],["cd","コンゴ民主共和国","キンシャサ"],["cg","コンゴ共和国","ブラザビル"],["cf","中央アフリカ","バンギ"],
+    ["cm","カメルーン","ヤウンデ"],["td","チャド","ンジャメナ"],["ne","ニジェール","ニアメ"],["ng","ナイジェリア","アブジャ"],["bj","ベナン","ポルトノボ"],
+    ["tg","トーゴ","ロメ"],["gh","ガーナ","アクラ"],["ci","コートジボワール","ヤムスクロ"],["lr","リベリア","モンロビア"],["sl","シエラレオネ","フリータウン"],
+    ["gn","ギニア","コナクリ"],["gw","ギニアビサウ","ビサウ"],["sn","セネガル","ダカール"],["gm","ガンビア","バンジュール"],["ml","マリ","バマコ"],
+    ["bf","ブルキナファソ","ワガドゥグー"],["mr","モーリタニア","ヌアクショット"],["cv","カーボベルデ","プライア"],["gq","赤道ギニア","マラボ"],
+    ["ga","ガボン","リーブルビル"],["st","サントメ・プリンシペ","サントメ"],["ao","アンゴラ","ルアンダ"],["zm","ザンビア","ルサカ"],["mw","マラウイ","リロングウェ"],
+    ["mz","モザンビーク","マプト"],["zw","ジンバブエ","ハラレ"],["bw","ボツワナ","ハボローネ"],["na","ナミビア","ウィントフック"],["za","南アフリカ","プレトリア"],
+    ["sz","エスワティニ","ムババーネ"],["ls","レソト","マセル"],["mg","マダガスカル","アンタナナリボ"],["mu","モーリシャス","ポートルイス"],["sc","セーシェル","ビクトリア"],
+    ["km","コモロ","モロニ"],
+    ["au","オーストラリア","キャンベラ"],["nz","ニュージーランド","ウェリントン"],["pg","パプアニューギニア","ポートモレスビー"],["fj","フィジー","スバ"],
+    ["sb","ソロモン諸島","ホニアラ"],["vu","バヌアツ","ポートビラ"],["ws","サモア","アピア"],["to","トンガ","ヌクアロファ"],["ki","キリバス","タラワ"],
+    ["tv","ツバル","フナフティ"],["nr","ナウル","ヤレン"],["pw","パラオ","マルキョク"],["fm","ミクロネシア連邦","パリキール"],["mh","マーシャル諸島","マジュロ"],
+    ["us","アメリカ合衆国","ワシントンD.C."],["ca","カナダ","オタワ"],["mx","メキシコ","メキシコシティ"],["gt","グアテマラ","グアテマラシティ"],["bz","ベリーズ","ベルモパン"],
+    ["sv","エルサルバドル","サンサルバドル"],["hn","ホンジュラス","テグシガルパ"],["ni","ニカラグア","マナグア"],["cr","コスタリカ","サンホセ"],["pa","パナマ","パナマシティ"],
+    ["cu","キューバ","ハバナ"],["jm","ジャマイカ","キングストン"],["ht","ハイチ","ポルトープランス"],["do","ドミニカ共和国","サントドミンゴ"],["bs","バハマ","ナッソー"],
+    ["bb","バルバドス","ブリッジタウン"],["tt","トリニダード・トバゴ","ポートオブスペイン"],["lc","セントルシア","カストリーズ"],["vc","セントビンセント・グレナディーン","キングスタウン"],
+    ["gd","グレナダ","セントジョージズ"],["dm","ドミニカ国","ロゾー"],["ag","アンティグア・バーブーダ","セントジョンズ"],["kn","セントクリストファー・ネイビス","バセテール"],
+    ["co","コロンビア","ボゴタ"],["ve","ベネズエラ","カラカス"],["gy","ガイアナ","ジョージタウン"],["sr","スリナム","パラマリボ"],["ec","エクアドル","キト"],
+    ["pe","ペルー","リマ"],["br","ブラジル","ブラジリア"],["bo","ボリビア","ラパス"],["py","パラグアイ","アスンシオン"],["uy","ウルグアイ","モンテビデオ"],["ar","アルゼンチン","ブエノスアイレス"]
   ];
 
   let deck = [];
   let currentCountry = null;
   let agreed1 = false, agreed2 = false;
+  let quizMode = "flag";
 
   function shuffle(arr) {
     const a = arr.slice();
@@ -315,6 +373,15 @@
   function showScreen(id) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
     document.getElementById(id).classList.add("active");
+  }
+
+  function selectMode(mode) {
+    quizMode = mode;
+    document.body.classList.remove("mode-flag", "mode-capital");
+    document.body.classList.add("mode-" + mode);
+    document.getElementById("mode-label").textContent =
+      mode === "flag" ? "えらんだクイズ: 国旗クイズ" : "えらんだクイズ: 国の首都あてクイズ";
+    showScreen("screen-rules");
   }
 
   function agree(n) {
@@ -361,18 +428,36 @@
     const img = document.getElementById("flag-img");
     img.src = `https://flagcdn.com/w640/${currentCountry[0]}.png`;
     img.alt = currentCountry[1];
-    const ans = document.getElementById("answer-name");
-    ans.textContent = "";
-    ans.style.display = "none";
-    document.getElementById("show-answer-btn").style.display = "inline-block";
+
+    ["reveal-country", "reveal-capital"].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = "";
+      el.style.display = "none";
+    });
+    ["show-answer-btn", "show-country-btn", "show-capital-btn"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "";
+    });
+
     showScreen("screen-flag");
   }
 
-  function showAnswer() {
-    const ans = document.getElementById("answer-name");
-    ans.textContent = currentCountry[1];
-    ans.style.display = "block";
-    document.getElementById("show-answer-btn").style.display = "none";
+  function showCountryAnswer() {
+    const el = document.getElementById("reveal-country");
+    el.textContent = currentCountry[1];
+    el.style.display = "block";
+    const a = document.getElementById("show-answer-btn");
+    if (a) a.style.display = "none";
+    const b = document.getElementById("show-country-btn");
+    if (b) b.style.display = "none";
+  }
+
+  function showCapitalAnswer() {
+    const el = document.getElementById("reveal-capital");
+    el.textContent = currentCountry[2];
+    el.style.display = "block";
+    const b = document.getElementById("show-capital-btn");
+    if (b) b.style.display = "none";
   }
 
   newDeck();
